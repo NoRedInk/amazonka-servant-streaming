@@ -9,6 +9,8 @@ module Main where
 import Amazonka hiding (Header)
 import Amazonka.S3
 import Amazonka.S3.Lens
+import Amazonka.Polly
+import Amazonka.Polly.SynthesizeSpeech
 import Configuration.Dotenv
 import Control.Lens
 import Control.Monad (void)
@@ -24,7 +26,7 @@ import Servant.Conduit ()
 import qualified Servant.Types.SourceT as S
 
 main :: IO ()
-main = loadFile defaultConfig >> run 3030 app
+main = run 3030 app
 
 app :: Application
 app = serve (Proxy @API) server
@@ -45,8 +47,9 @@ oneStepHandler = do
   awsEnv <- newEnv Discover
   resourceState <- createInternalState
   res <- flip runInternalState resourceState $ do
-    awsRes <- send awsEnv getObjectRequest
-    pure . _streamBody $ awsRes ^. getObjectResponse_body
+    awsRes <- send awsEnv (newSynthesizeSpeech OutputFormat_Mp3 "hello" VoiceId_Joanna)
+    -- awsRes <- send awsEnv getObjectRequest
+    pure . _streamBody $ awsRes ^. synthesizeSpeechResponse_audioStream
 
   -- It took me a long time to understand what this was doing.
   -- Because ConduitT is a monad transformer and we have

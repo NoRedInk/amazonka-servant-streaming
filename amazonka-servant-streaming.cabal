@@ -9,6 +9,7 @@ executable example
   build-depends: base
                , amazonka
                , amazonka-s3
+               , amazonka-polly
                , conduit
                , conduit-extra
                , dotenv

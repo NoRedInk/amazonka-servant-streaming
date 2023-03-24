@@ -17,6 +17,8 @@ import Control.Monad (void)
 import Control.Monad.Trans.Resource
 import Control.Monad.IO.Class
 import Data.Conduit
+import Data.Text (Text)
+import Data.ByteString (ByteString)
 import qualified Data.Conduit.Binary as CB
 import Data.Conduit.Combinators
 import Network.Wai
@@ -33,10 +35,9 @@ app = serve (Proxy @API) server
 
 type API =
   "one-step" :> StreamGet NoFraming OctetStream (ConduitT () ByteString (ResourceT IO) ())
-    :<|> "two-steps" :> StreamGet NoFraming OctetStream (Headers '[ Header "Content-Disposition" Text] (SourceIO ByteString))
 
 server :: Server API
-server = oneStepHandler :<|> twoStepsHandler
+server = oneStepHandler
 
 getObjectRequest :: GetObject
 getObjectRequest = newGetObject (BucketName "amazonka-servant-streaming") (ObjectKey "haskell.png")
@@ -44,12 +45,12 @@ getObjectRequest = newGetObject (BucketName "amazonka-servant-streaming") (Objec
 -- forwarding the stream
 oneStepHandler :: Handler (ConduitT () ByteString (ResourceT IO) ())
 oneStepHandler = do
-  awsEnv <- newEnv Discover
+  awsEnv <- newEnv discover
   resourceState <- createInternalState
   res <- flip runInternalState resourceState $ do
     awsRes <- send awsEnv (newSynthesizeSpeech OutputFormat_Mp3 "hello" VoiceId_Joanna)
     -- awsRes <- send awsEnv getObjectRequest
-    pure . _streamBody $ awsRes ^. synthesizeSpeechResponse_audioStream
+    pure $ awsRes ^. synthesizeSpeechResponse_audioStream ^. _ResponseBody
 
   -- It took me a long time to understand what this was doing.
   -- Because ConduitT is a monad transformer and we have
@@ -58,13 +59,3 @@ oneStepHandler = do
   -- end of the conduit, just before it returns its final value
   -- (which was () anyway).
   pure $ res *> closeInternalState resourceState
-
--- first downloading then sending the file
-twoStepsHandler :: Handler (Headers '[ Header "Content-Disposition" Text] (SourceIO ByteString))
-twoStepsHandler = do
-  awsEnv <- newEnv Discover
-  liftIO $
-    runResourceT $ do
-      res <- send awsEnv getObjectRequest
-      void $ (res ^. getObjectResponse_body) `sinkBody` CB.sinkFile "haskell.png"
-  pure $ addHeader "attachment; filename=\"haskell.png\"" $ S.readFile "haskell.png"

@@ -10,6 +10,7 @@ executable example
                , amazonka
                , amazonka-s3
                , amazonka-polly
+               , bytestring
                , conduit
                , conduit-extra
                , dotenv
@@ -18,5 +19,6 @@ executable example
                , servant
                , servant-conduit
                , servant-server
+               , text
                , wai
                , warp

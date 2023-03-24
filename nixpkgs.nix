@@ -13,7 +13,9 @@ let
       # visit https://raw.githubusercontent.com/NixOS/nixpkgs/${NIXPKGS_COMMIT_HERE}/pkgs/development/haskell-modules/hackage-packages.nix
       haskellPackages = super.haskell.packages.ghc8107.override {
         overrides = hself: hsuper:
-          let amazonkaSrc = githubTarball "brendanhay" "amazonka" "2.0.0-rc1";
+          let
+            amazonkaSrc = githubTarball "brendanhay" "amazonka"
+              "91eb47e8e8af0597b2c496d319fd19c0f7e47bc3";
           in {
             amazonka = self.haskell.lib.dontCheck
               (hsuper.callCabal2nix "amazonka" "${amazonkaSrc}/lib/amazonka"
@@ -33,6 +35,9 @@ let
             amazonka-polly = self.haskell.lib.dontCheck
               (hsuper.callCabal2nix "amazonka-polly"
                 "${amazonkaSrc}/lib/services/amazonka-polly" { });
+            amazonka-sso = self.haskell.lib.dontCheck
+              (hsuper.callCabal2nix "amazonka-polly"
+                "${amazonkaSrc}/lib/services/amazonka-sso" { });
             amazonka-servant-streaming =
               hsuper.callCabal2nix "amazonka-servant-streaming" ./. { };
           };
